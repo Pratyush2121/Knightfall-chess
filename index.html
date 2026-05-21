@@ -1,0 +1,1546 @@
+
+
+cat > /mnt/user-data/outputs/knightfall.html << 'HTMLEOF'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Knightfall Chess</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;900&family=Crimson+Pro:ital,wght@0,300;0,400;0,600;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --gold-dark: #8a6f2e;
+
+    --cream: #f5ead8;
+    --dark: #0d0b08;
+    --dark2: #1a1610;
+    --dark3: #252018;
+    --dark4: #322c20;
+    --light-sq: #e8d5b0;
+    --dark-sq: #8b6914;
+    --highlight: rgba(255,215,0,0.45);
+    --red: #c0392b;
+    --green: #2ecc71;
+    --move-dot: rgba(0,0,0,0.22);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--dark);
+    color: var(--cream);
+    font-family: 'Crimson Pro', serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* ── BACKGROUND ── */
+  .bg-pattern {
+    position: fixed; inset: 0; z-index: 0; pointer-events: none;
+    background-image:
+      radial-gradient(ellipse 80% 60% at 50% -10%, rgba(201,168,76,0.12) 0%, transparent 60%),
+      repeating-linear-gradient(45deg, transparent, transparent 40px, rgba(201,168,76,0.015) 40px, rgba(201,168,76,0.015) 41px);
+  }
+
+  /* ── NAV ── */
+  nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 3rem;
+    height: 72px;
+    background: linear-gradient(to bottom, rgba(13,11,8,0.98), rgba(13,11,8,0.85));
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid rgba(201,168,76,0.2);
+  }
+  .nav-logo {
+    font-family: 'Cinzel', serif;
+    font-size: 1.5rem;
+    font-weight: 900;
+    color: var(--gold);
+    letter-spacing: 3px;
+    text-shadow: 0 0 30px rgba(201,168,76,0.4);
+    cursor: pointer;
+  }
+  .nav-logo span { color: var(--cream); }
+  .nav-links { display: flex; gap: 2.5rem; list-style: none; }
+  .nav-links a {
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 2px;
+    color: rgba(245,234,216,0.7);
+    text-decoration: none;
+    text-transform: uppercase;
+    transition: color 0.3s;
+    cursor: pointer;
+  }
+  .nav-links a:hover { color: var(--gold); }
+
+  /* ── PAGES ── */
+  .page { display: none; position: relative; z-index: 1; }
+  .page.active { display: block; }
+
+  /* ── HOME PAGE ── */
+  #home {
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding-top: 72px;
+  }
+  .hero {
+    text-align: center;
+    padding: 5rem 2rem 3rem;
+    animation: fadeUp 1s ease both;
+  }
+  .hero-subtitle {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 6px;
+    color: var(--gold);
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+    opacity: 0;
+    animation: fadeUp 1s 0.2s ease forwards;
+  }
+  .hero h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(3rem, 8vw, 7rem);
+    font-weight: 900;
+    line-height: 0.9;
+    color: var(--cream);
+    text-shadow: 0 0 60px rgba(201,168,76,0.2);
+    opacity: 0;
+    animation: fadeUp 1s 0.35s ease forwards;
+  }
+  .hero h1 em {
+    font-style: normal;
+    color: var(--gold);
+    display: block;
+  }
+  .hero p {
+    font-size: 1.3rem;
+    font-style: italic;
+    color: rgba(245,234,216,0.6);
+    margin-top: 1.5rem;
+    max-width: 500px;
+    margin-left: auto; margin-right: auto;
+    opacity: 0;
+    animation: fadeUp 1s 0.5s ease forwards;
+  }
+  .hero-buttons {
+    display: flex; gap: 1.5rem; justify-content: center; flex-wrap: wrap;
+    margin-top: 3rem;
+    opacity: 0;
+    animation: fadeUp 1s 0.65s ease forwards;
+  }
+  .btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    padding: 1rem 2.5rem;
+    border: none; cursor: pointer;
+    position: relative; overflow: hidden;
+    transition: transform 0.2s, box-shadow 0.3s;
+  }
+  .btn::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: rgba(255,255,255,0.1);
+    transform: translateX(-100%);
+    transition: transform 0.4s;
+  }
+  .btn:hover::after { transform: translateX(0); }
+  .btn:hover { transform: translateY(-2px); }
+  .btn-primary {
+    background: var(--gold);
+    color: var(--dark);
+    box-shadow: 0 4px 30px rgba(201,168,76,0.3);
+  }
+  .btn-primary:hover { box-shadow: 0 8px 40px rgba(201,168,76,0.5); }
+  .btn-secondary {
+    background: transparent;
+    color: var(--gold);
+    border: 1.5px solid var(--gold);
+  }
+  .btn-secondary:hover { box-shadow: 0 4px 20px rgba(201,168,76,0.2); }
+
+  /* Floating chess pieces in hero — LIGHTER opacity */
+  .float-pieces {
+    position: absolute;
+    top: 72px; left: 0; right: 0; bottom: 0;
+    pointer-events: none; overflow: hidden;
+  }
+  .float-piece {
+    position: absolute;
+    font-size: 4rem;
+    opacity: 0.18;
+    animation: floatPiece linear infinite;
+    filter: blur(0.5px);
+  }
+
+  /* ── DECORATIVE BOARD PREVIEW ── */
+  .mini-board-wrap {
+    opacity: 0;
+    animation: fadeUp 1s 0.8s ease forwards;
+    margin-top: 3rem;
+  }
+  .mini-board {
+    display: grid;
+    grid-template-columns: repeat(8, 48px);
+    grid-template-rows: repeat(8, 48px);
+    border: 2px solid var(--gold-dark);
+    box-shadow: 0 0 60px rgba(201,168,76,0.15), 0 30px 60px rgba(0,0,0,0.5);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .mini-sq { width: 48px; height: 48px; display:flex; align-items:center; justify-content:center; font-size:1.5rem; }
+  .mini-sq.l { background: var(--light-sq); }
+  .mini-sq.d { background: var(--dark-sq); }
+
+  /* ── PLAY PAGE ── */
+  #play { padding: 80px 2rem 3rem; }
+  .play-header {
+    text-align: center; margin-bottom: 3rem;
+    animation: fadeUp 0.7s ease both;
+  }
+  .play-header h2 {
+    font-family: 'Cinzel', serif;
+    font-size: 2.5rem;
+    color: var(--gold);
+    letter-spacing: 4px;
+  }
+  .mode-selector {
+    display: flex; gap: 1.5rem; justify-content: center; margin-bottom: 2.5rem;
+    animation: fadeUp 0.7s 0.15s ease both;
+    flex-wrap: wrap;
+  }
+  .mode-card {
+    background: var(--dark3);
+    border: 1.5px solid rgba(201,168,76,0.2);
+    padding: 2rem 2.5rem;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.3s;
+    min-width: 220px;
+    border-radius: 2px;
+  }
+  .mode-card:hover, .mode-card.selected {
+    border-color: var(--gold);
+    background: var(--dark4);
+    box-shadow: 0 0 30px rgba(201,168,76,0.15);
+    transform: translateY(-4px);
+  }
+  .mode-card .mode-icon { font-size: 3rem; margin-bottom: 0.8rem; display:block; }
+  .mode-card h3 { font-family:'Cinzel',serif; font-size:1rem; color:var(--gold); letter-spacing:2px; }
+  .mode-card p { font-size:0.9rem; color:rgba(245,234,216,0.55); margin-top:0.5rem; font-style:italic; }
+
+  /* Bot difficulty */
+  .difficulty-wrap {
+    display: none;
+    text-align: center;
+    margin-bottom: 2rem;
+    animation: fadeUp 0.5s ease both;
+  }
+  .difficulty-wrap.visible { display: block; }
+  .difficulty-wrap label {
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 3px;
+    color: var(--gold);
+    display: block;
+    margin-bottom: 1rem;
+  }
+  .difficulty-btns { display: flex; gap: 0.8rem; justify-content: center; flex-wrap: wrap; }
+  .diff-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    padding: 0.6rem 1.4rem;
+    background: var(--dark3);
+    border: 1px solid rgba(201,168,76,0.3);
+    color: rgba(245,234,216,0.7);
+    cursor: pointer;
+    transition: all 0.25s;
+    border-radius: 1px;
+  }
+  .diff-btn:hover, .diff-btn.active {
+    background: var(--gold);
+    color: var(--dark);
+    border-color: var(--gold);
+    box-shadow: 0 0 20px rgba(201,168,76,0.3);
+  }
+
+  /* ── CHESS BOARD ── */
+  .game-wrap {
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    animation: fadeUp 0.5s ease both;
+  }
+  .game-wrap.visible { display: flex; }
+  .board-container {
+    position: relative;
+    display: flex;
+    align-items: flex-start;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+  .board-labels-left {
+    display: flex; flex-direction: column;
+    justify-content: space-around;
+    height: calc(8 * 72px);
+    padding: 0;
+  }
+  .board-labels-left span, .board-labels-bottom span {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    color: var(--gold-dark);
+    letter-spacing: 1px;
+    width: 18px;
+    text-align: center;
+  }
+  .board-labels-bottom {
+    display: flex;
+    justify-content: space-around;
+    width: calc(8 * 72px);
+  }
+  .chess-board {
+    display: grid;
+    grid-template-columns: repeat(8, 72px);
+    grid-template-rows: repeat(8, 72px);
+    border: 3px solid var(--gold-dark);
+    box-shadow: 0 0 80px rgba(201,168,76,0.2), 0 40px 80px rgba(0,0,0,0.6);
+    border-radius: 2px;
+    overflow: hidden;
+  }
+  .sq {
+    width: 72px; height: 72px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 2.8rem;
+    cursor: pointer;
+    position: relative;
+    transition: filter 0.15s;
+    user-select: none;
+  }
+  .sq.light { background: var(--light-sq); }
+  .sq.dark  { background: var(--dark-sq); }
+  .sq.selected { background: var(--highlight) !important; }
+  .sq.last-move { background: rgba(255,215,0,0.28) !important; }
+  .sq.in-check { background: rgba(192,57,43,0.6) !important; }
+  .sq:hover { filter: brightness(1.1); }
+  .sq .move-dot {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    background: var(--move-dot);
+    pointer-events: none;
+    position: absolute;
+  }
+  .sq .capture-ring {
+    width: 66px; height: 66px;
+    border-radius: 50%;
+    border: 5px solid rgba(0,0,0,0.22);
+    pointer-events: none;
+    position: absolute;
+  }
+  .piece { line-height: 1; pointer-events: none; text-shadow: 1px 2px 4px rgba(0,0,0,0.4); }
+  .piece-anim { animation: pieceDrop 0.25s cubic-bezier(0.34,1.56,0.64,1); }
+
+  /* Sidebar */
+  .side-panel {
+    background: var(--dark3);
+    border: 1px solid rgba(201,168,76,0.15);
+    padding: 1.5rem;
+    width: 220px;
+    min-height: 400px;
+    display: flex; flex-direction: column;
+    gap: 1rem;
+  }
+  .side-panel h4 {
+    font-family: 'Cinzel', serif;
+    font-size: 0.8rem;
+    letter-spacing: 2px;
+    color: var(--gold);
+    border-bottom: 1px solid rgba(201,168,76,0.2);
+    padding-bottom: 0.5rem;
+  }
+  .move-list {
+    font-size: 0.85rem;
+    color: rgba(245,234,216,0.7);
+    flex: 1;
+    overflow-y: auto;
+    max-height: 300px;
+    font-family: 'Crimson Pro', serif;
+    line-height: 1.8;
+  }
+  .move-list .move-pair { display: flex; gap: 0.5rem; padding: 2px 0; }
+  .move-list .move-num { color: var(--gold-dark); min-width: 24px; }
+  .status-bar {
+    font-family: 'Cinzel', serif;
+    font-size: 0.75rem;
+    letter-spacing: 1px;
+    color: var(--cream);
+    background: rgba(0,0,0,0.3);
+    padding: 0.7rem 1rem;
+    text-align: center;
+    border: 1px solid rgba(201,168,76,0.15);
+    min-height: 42px;
+  }
+  .resign-btn {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem;
+    letter-spacing: 2px;
+    background: transparent;
+    border: 1px solid rgba(192,57,43,0.4);
+    color: rgba(192,57,43,0.7);
+    padding: 0.6rem;
+    cursor: pointer;
+    transition: all 0.25s;
+    width: 100%;
+  }
+  .resign-btn:hover { background: var(--red); color: white; border-color: var(--red); }
+
+  /* ── LEARN PAGE ── */
+  #learn { padding: 80px 2rem 5rem; max-width: 1100px; margin: 0 auto; }
+  .learn-header {
+    text-align: center; margin-bottom: 4rem;
+    animation: fadeUp 0.7s ease both;
+  }
+  .learn-header .badge {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem; letter-spacing: 5px;
+    color: var(--gold); text-transform: uppercase;
+    display: inline-block; margin-bottom: 1rem;
+    border: 1px solid rgba(201,168,76,0.3);
+    padding: 0.35rem 1rem;
+  }
+  .learn-header h2 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+    color: var(--cream);
+    letter-spacing: 2px;
+  }
+  .learn-header p {
+    font-size: 1.2rem; font-style: italic;
+    color: rgba(245,234,216,0.55);
+    margin-top: 0.8rem;
+  }
+
+  .lesson-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+    gap: 2rem;
+  }
+  .lesson-card {
+    background: var(--dark2);
+    border: 1px solid rgba(201,168,76,0.15);
+    padding: 2rem;
+    cursor: pointer;
+    transition: all 0.35s;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp 0.7s ease both;
+  }
+  .lesson-card::before {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(135deg, rgba(201,168,76,0.06) 0%, transparent 60%);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .lesson-card:hover { border-color: var(--gold); transform: translateY(-6px); box-shadow: 0 20px 50px rgba(0,0,0,0.4); }
+  .lesson-card:hover::before { opacity: 1; }
+  .lesson-icon { font-size: 3rem; margin-bottom: 1rem; display: block; }
+  .lesson-card h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 1rem; letter-spacing: 2px;
+    color: var(--gold); margin-bottom: 0.5rem;
+  }
+  .lesson-card p { font-size: 1rem; color: rgba(245,234,216,0.6); font-style: italic; line-height: 1.6; }
+  .lesson-tag {
+    display: inline-block; margin-top: 1rem;
+    font-family: 'Cinzel', serif;
+    font-size: 0.65rem; letter-spacing: 2px;
+    padding: 0.25rem 0.8rem;
+    border: 1px solid rgba(201,168,76,0.3);
+    color: var(--gold-dark);
+  }
+
+  /* Lesson modal */
+  .modal-overlay {
+    display: none;
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(0,0,0,0.85);
+    backdrop-filter: blur(6px);
+    align-items: center; justify-content: center;
+    padding: 2rem;
+  }
+  .modal-overlay.open { display: flex; }
+  .modal {
+    background: var(--dark2);
+    border: 1px solid rgba(201,168,76,0.3);
+    max-width: 700px; width: 100%;
+    max-height: 85vh; overflow-y: auto;
+    padding: 3rem;
+    position: relative;
+    animation: fadeUp 0.4s ease;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.6);
+  }
+  .modal-close {
+    position: absolute; top: 1.5rem; right: 1.5rem;
+    background: transparent;
+    border: 1px solid rgba(201,168,76,0.3);
+    color: var(--gold);
+    width: 36px; height: 36px;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex; align-items: center; justify-content: center;
+    transition: all 0.2s;
+    font-family: monospace;
+  }
+  .modal-close:hover { background: var(--gold); color: var(--dark); }
+  .modal h3 {
+    font-family: 'Cinzel', serif;
+    font-size: 1.6rem; letter-spacing: 3px;
+    color: var(--gold); margin-bottom: 1.5rem;
+  }
+  .modal p { font-size: 1.1rem; line-height: 1.9; color: rgba(245,234,216,0.8); margin-bottom: 1rem; }
+  .modal .piece-showcase {
+    display: flex; gap: 2rem; flex-wrap: wrap;
+    margin: 2rem 0;
+    padding: 1.5rem;
+    background: var(--dark3);
+    border: 1px solid rgba(201,168,76,0.15);
+    justify-content: center;
+  }
+  .piece-info { text-align: center; }
+  .piece-info .symbol { font-size: 3.5rem; display: block; margin-bottom: 0.5rem; }
+  .piece-info .pname {
+    font-family: 'Cinzel', serif;
+    font-size: 0.7rem; letter-spacing: 2px;
+    color: var(--gold-dark);
+  }
+  .piece-info .pvalue {
+    font-size: 0.85rem; font-style: italic;
+    color: rgba(245,234,216,0.4);
+  }
+
+  /* ── PROMOTION MODAL ── */
+  .promo-modal {
+    display: none;
+    position: fixed; inset: 0; z-index: 300;
+    background: rgba(0,0,0,0.85);
+    align-items: center; justify-content: center;
+  }
+  .promo-modal.open { display: flex; }
+  .promo-box {
+    background: var(--dark2);
+    border: 2px solid var(--gold);
+    padding: 2.5rem;
+    text-align: center;
+    animation: fadeUp 0.3s ease;
+    box-shadow: 0 0 60px rgba(201,168,76,0.3);
+  }
+  .promo-box h4 {
+    font-family: 'Cinzel', serif;
+    color: var(--gold); letter-spacing: 3px;
+    margin-bottom: 1.5rem; font-size: 1rem;
+  }
+  .promo-choices { display: flex; gap: 1rem; }
+  .promo-piece {
+    font-size: 3.5rem; cursor: pointer;
+    padding: 0.5rem;
+    transition: transform 0.2s;
+    background: var(--dark3);
+    border: 1px solid rgba(201,168,76,0.2);
+    width: 80px; height: 80px;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .promo-piece:hover { transform: scale(1.15); border-color: var(--gold); }
+
+  /* ── FOOTER ── */
+  footer {
+    position: relative; z-index: 1;
+    background: var(--dark2);
+    border-top: 1px solid rgba(201,168,76,0.2);
+    padding: 2rem 3rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 1rem;
+  }
+  .footer-brand {
+    font-family: 'Cinzel', serif;
+    font-size: 1.1rem;
+    font-weight: 900;
+    color: var(--gold);
+    letter-spacing: 3px;
+  }
+  .footer-brand span { color: var(--cream); }
+  .footer-details {
+    text-align: right;
+    font-family: 'Crimson Pro', serif;
+  }
+  .footer-name {
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    letter-spacing: 2px;
+    color: var(--cream);
+    margin-bottom: 0.2rem;
+  }
+  .footer-meta {
+    font-size: 0.9rem;
+    font-style: italic;
+    color: rgba(245,234,216,0.45);
+  }
+  .footer-divider {
+    width: 1px;
+    height: 40px;
+    background: rgba(201,168,76,0.2);
+    flex-shrink: 0;
+  }
+  @media (max-width: 600px) {
+    footer { flex-direction: column; align-items: center; text-align: center; }
+    .footer-details { text-align: center; }
+    .footer-divider { width: 60px; height: 1px; }
+  }
+
+  /* ── KEYFRAMES ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(24px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes floatPiece {
+    0%   { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+    10%  { opacity: 0.18; }
+    90%  { opacity: 0.18; }
+    100% { transform: translateY(-200px) rotate(360deg); opacity: 0; }
+  }
+  @keyframes pieceDrop {
+    from { transform: scale(1.4) translateY(-12px); opacity: 0.5; }
+    to   { transform: scale(1) translateY(0); opacity: 1; }
+  }
+  @keyframes pulse {
+    0%, 100% { box-shadow: 0 0 20px rgba(201,168,76,0.3); }
+    50% { box-shadow: 0 0 40px rgba(201,168,76,0.6); }
+  }
+  @keyframes ripple {
+    from { transform: scale(0.8); opacity: 0.8; }
+    to   { transform: scale(2); opacity: 0; }
+  }
+
+  .thinking-dot {
+    display: inline-block;
+    width: 6px; height: 6px;
+    background: var(--gold);
+    border-radius: 50%;
+    margin: 0 3px;
+    animation: thinkBlink 1.2s infinite;
+  }
+  .thinking-dot:nth-child(2) { animation-delay: 0.2s; }
+  .thinking-dot:nth-child(3) { animation-delay: 0.4s; }
+  @keyframes thinkBlink {
+    0%, 80%, 100% { opacity: 0.2; transform: scale(0.8); }
+    40% { opacity: 1; transform: scale(1.2); }
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 680px) {
+    nav {
+      padding: 0.8rem 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 0.75rem;
+      height: auto;
+    }
+    .nav-logo { flex: 1 1 100%; text-align: center; }
+    .nav-links {
+      gap: 1rem;
+      flex-wrap: wrap;
+      justify-content: center;
+      width: 100%;
+    }
+    .hero {
+      padding: 4rem 1rem 2rem;
+    }
+    .hero h1 { font-size: 3rem; }
+    .hero p { max-width: 100%; font-size: 1.05rem; }
+    .hero-buttons {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 1rem;
+      width: 100%;
+      margin-top: 2.5rem;
+    }
+    .btn {
+      width: 100%;
+      justify-content: center;
+      display: inline-flex;
+    }
+    .mini-board {
+      transform: scale(0.92);
+      transform-origin: center top;
+    }
+    #play, #learn { padding: 80px 1rem 2rem; }
+    .mode-selector { flex-direction: column; gap: 1rem; }
+    .mode-card { width: 100%; max-width: 100%; }
+    .difficulty-wrap { padding: 0 0.5rem; }
+    .game-wrap { width: 100%; }
+    .board-container { flex-direction: column; align-items: center; }
+    .side-panel { width: 100%; min-height: auto; }
+    .lesson-grid { grid-template-columns: 1fr; }
+    footer { padding: 1.5rem 1rem; }
+    .footer-divider { width: 60px; height: 1px; }
+    .footer-details { text-align: center; }
+  }
+</style>
+</head>
+<body>
+
+<div class="bg-pattern"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo" onclick="showPage('home')">KNIGHT<span>FALL</span></div>
+  <ul class="nav-links">
+    <li><a href="#home" onclick="showPage('home'); return false;">Home</a></li>
+    <li><a href="#play" onclick="showPage('play'); return false;">Play</a></li>
+    <li><a href="#learn" onclick="showPage('learn'); return false;">Learn</a></li>
+  </ul>
+</nav>
+
+<!-- ══ HOME PAGE ══ -->
+<div class="page active" id="home">
+  <div class="float-pieces" id="floatPieces"></div>
+  <div class="hero">
+    <p class="hero-subtitle">The Ancient Game of Kings</p>
+    <h1>KNIGHT<em>FALL</em></h1>
+    <p>Where strategy is born, and legends are made. Play, learn, and conquer.</p>
+    <div class="hero-buttons">
+      <a class="btn btn-primary" href="#play" onclick="showPage('play'); selectMode('local'); startGame(); return false;">Play Now</a>
+      <a class="btn btn-secondary" href="#learn" onclick="showPage('learn'); return false;">Learn Chess</a>
+    </div>
+  </div>
+  <div class="mini-board-wrap">
+    <div class="mini-board" id="miniBoard"></div>
+  </div>
+</div>
+
+<!-- ══ PLAY PAGE ══ -->
+<div class="page" id="play">
+  <div class="play-header">
+    <h2>Choose Your Battle</h2>
+  </div>
+
+  <div class="mode-selector">
+    <div class="mode-card" id="modeBot" onclick="selectMode('bot')">
+      <span class="mode-icon">🤖</span>
+      <h3>VS Computer</h3>
+      <p>Challenge our AI at your chosen difficulty</p>
+    </div>
+    <div class="mode-card" id="modeLocal" onclick="selectMode('local')">
+      <span class="mode-icon">⚔️</span>
+      <h3>Local Match</h3>
+      <p>Pass and play with a friend on this device</p>
+    </div>
+  </div>
+
+  <div class="difficulty-wrap" id="diffWrap">
+    <label>BOT DIFFICULTY</label>
+    <div class="difficulty-btns">
+      <button class="diff-btn active" onclick="setDiff(1,this)">Pawn &mdash; Easy</button>
+      <button class="diff-btn" onclick="setDiff(2,this)">Knight &mdash; Medium</button>
+      <button class="diff-btn" onclick="setDiff(3,this)">Bishop &mdash; Hard</button>
+      <button class="diff-btn" onclick="setDiff(4,this)">King &mdash; Expert</button>
+    </div>
+  </div>
+
+  <div style="text-align:center; margin-bottom:2rem;" id="startWrap" style="display:none">
+    <button class="btn btn-primary" id="startBtn" onclick="startGame()" style="display:none">Begin Game</button>
+  </div>
+
+  <div class="game-wrap" id="gameWrap">
+    <div style="margin-bottom:1.2rem;" id="statusBar">
+      <div class="status-bar" id="statusText">White to move</div>
+    </div>
+    <div class="board-container">
+      <div class="board-labels-left" id="rankLabels"></div>
+      <div>
+        <div class="chess-board" id="chessBoard"></div>
+        <div class="board-labels-bottom" id="fileLabels"></div>
+      </div>
+      <div class="side-panel">
+        <h4>MOVES</h4>
+        <div class="move-list" id="moveList"></div>
+        <button class="resign-btn" onclick="resignGame()">Resign</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ LEARN PAGE ══ -->
+<div class="page" id="learn">
+  <div class="learn-header">
+    <span class="badge">Beginners Guide</span>
+    <h2>Master the Board</h2>
+    <p>From your first move to your first checkmate</p>
+  </div>
+
+  <div class="lesson-grid">
+    <div class="lesson-card" onclick="openLesson('basics')" style="animation-delay:0.1s">
+      <span class="lesson-icon">♟</span>
+      <h3>The Basics</h3>
+      <p>Learn the objective of chess, the board layout, and how the game begins.</p>
+      <span class="lesson-tag">START HERE</span>
+    </div>
+    <div class="lesson-card" onclick="openLesson('pieces')" style="animation-delay:0.2s">
+      <span class="lesson-icon">♞</span>
+      <h3>The Pieces</h3>
+      <p>Every piece has a unique power. Learn how each one moves and its value.</p>
+      <span class="lesson-tag">FUNDAMENTAL</span>
+    </div>
+    <div class="lesson-card" onclick="openLesson('opening')" style="animation-delay:0.3s">
+      <span class="lesson-icon">🏰</span>
+      <h3>Opening Principles</h3>
+      <p>The first few moves set the tone. Discover the golden rules of the opening.</p>
+      <span class="lesson-tag">STRATEGY</span>
+    </div>
+    <div class="lesson-card" onclick="openLesson('tactics')" style="animation-delay:0.4s">
+      <span class="lesson-icon">⚡</span>
+      <h3>Basic Tactics</h3>
+      <p>Forks, pins, skewers — the sharp weapons you'll use to win material.</p>
+      <span class="lesson-tag">TACTICS</span>
+    </div>
+    <div class="lesson-card" onclick="openLesson('checkmate')" style="animation-delay:0.5s">
+      <span class="lesson-icon">👑</span>
+      <h3>Checkmate Patterns</h3>
+      <p>Learn the most common mating patterns: Scholar's mate, back rank, and more.</p>
+      <span class="lesson-tag">ENDGAME</span>
+    </div>
+    <div class="lesson-card" onclick="openLesson('special')" style="animation-delay:0.6s">
+      <span class="lesson-icon">✨</span>
+      <h3>Special Moves</h3>
+      <p>Castling, en passant, and pawn promotion — the moves that surprise beginners.</p>
+      <span class="lesson-tag">ADVANCED BASICS</span>
+    </div>
+  </div>
+</div>
+
+<!-- LESSON MODAL -->
+<div class="modal-overlay" id="modalOverlay" onclick="closeLesson(event)">
+  <div class="modal" id="modalContent">
+    <button class="modal-close" onclick="closeLesson(null, true)">✕</button>
+    <h3 id="modalTitle"></h3>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<!-- PROMOTION MODAL -->
+<div class="promo-modal" id="promoModal">
+  <div class="promo-box">
+    <h4>PROMOTE YOUR PAWN</h4>
+    <div class="promo-choices" id="promoChoices"></div>
+  </div>
+</div>
+
+<!-- ══ FOOTER ══ -->
+<footer>
+  <div class="footer-brand">KNIGHT<span>FALL</span></div>
+  <div class="footer-divider"></div>
+  <div class="footer-details">
+    <div class="footer-name">Rakshit Singh</div>
+    <div class="footer-meta">Class 7 &nbsp;·&nbsp; 9335088060</div>
+  </div>
+</footer>
+
+<script>
+// ═══════════════════════════════════════════════
+//  PAGE NAVIGATION
+// ═══════════════════════════════════════════════
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ═══════════════════════════════════════════════
+//  FLOATING PIECES ANIMATION (HOME)
+// ═══════════════════════════════════════════════
+const floatSymbols = ['♟','♞','♝','♜','♛','♚','♙','♘','♗','♖','♕','♔'];
+function initFloat() {
+  const wrap = document.getElementById('floatPieces');
+  for (let i = 0; i < 18; i++) {
+    const el = document.createElement('div');
+    el.className = 'float-piece';
+    el.textContent = floatSymbols[Math.floor(Math.random() * floatSymbols.length)];
+    el.style.left = Math.random() * 100 + 'vw';
+    el.style.fontSize = (2 + Math.random() * 4) + 'rem';
+    el.style.animationDuration = (18 + Math.random() * 20) + 's';
+    el.style.animationDelay = (-Math.random() * 20) + 's';
+    wrap.appendChild(el);
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  MINI DECORATIVE BOARD (HOME)
+// ═══════════════════════════════════════════════
+function buildMiniBoard() {
+  const miniPieces = [
+    '♜','♞','♝','♛','♚','♝','♞','♜',
+    '♟','♟','♟','♟','♟','♟','♟','♟',
+    '','','','','','','','',
+    '','','','','','','','',
+    '','','','','','','','',
+    '','','','','','','','',
+    '♙','♙','♙','♙','♙','♙','♙','♙',
+    '♖','♘','♗','♕','♔','♗','♘','♖'
+  ];
+  const mb = document.getElementById('miniBoard');
+  for (let i = 0; i < 64; i++) {
+    const sq = document.createElement('div');
+    const r = Math.floor(i / 8), c = i % 8;
+    sq.className = 'mini-sq ' + ((r + c) % 2 === 0 ? 'l' : 'd');
+    sq.textContent = miniPieces[i];
+    mb.appendChild(sq);
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  CHESS ENGINE
+// ═══════════════════════════════════════════════
+const PIECES = {
+  wP:'♙',wR:'♖',wN:'♘',wB:'♗',wQ:'♕',wK:'♔',
+  bP:'♟',bR:'♜',bN:'♞',bB:'♝',bQ:'♛',bK:'♚'
+};
+const PIECE_VALUES = { P:100, N:320, B:330, R:500, Q:900, K:20000 };
+const FILES = ['a','b','c','d','e','f','g','h'];
+
+let board, turn, selectedSq, legalMoves, gameMode, botDepth, moveHistory, gameOver;
+let lastMove, castleRights, enPassantTarget, halfMoveClock;
+let pendingPromotion = null;
+
+function initGame() {
+  board = [
+    ['bR','bN','bB','bQ','bK','bB','bN','bR'],
+    ['bP','bP','bP','bP','bP','bP','bP','bP'],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    [null,null,null,null,null,null,null,null],
+    ['wP','wP','wP','wP','wP','wP','wP','wP'],
+    ['wR','wN','wB','wQ','wK','wB','wN','wR']
+  ];
+  turn = 'w';
+  selectedSq = null;
+  legalMoves = [];
+  moveHistory = [];
+  gameOver = false;
+  lastMove = null;
+  castleRights = { wK:true, wQ:true, bK:true, bQ:true };
+  enPassantTarget = null;
+  halfMoveClock = 0;
+  renderBoard();
+  updateStatus('White to move');
+  document.getElementById('moveList').innerHTML = '';
+}
+
+function renderBoard() {
+  const cb = document.getElementById('chessBoard');
+  cb.innerHTML = '';
+  for (let r = 0; r < 8; r++) {
+    for (let c = 0; c < 8; c++) {
+      const sq = document.createElement('div');
+      sq.className = 'sq ' + ((r + c) % 2 === 0 ? 'light' : 'dark');
+      sq.dataset.r = r; sq.dataset.c = c;
+
+      if (lastMove && ((lastMove.fr===r && lastMove.fc===c) || (lastMove.tr===r && lastMove.tc===c))) {
+        sq.classList.add('last-move');
+      }
+      if (selectedSq && selectedSq[0]===r && selectedSq[1]===c) {
+        sq.classList.add('selected');
+      }
+      if (board[r][c] === turn+'K' && isInCheck(board, turn)) {
+        sq.classList.add('in-check');
+      }
+      const isLegal = legalMoves.find(m => m.tr===r && m.tc===c);
+      if (isLegal) {
+        const inner = document.createElement('div');
+        if (board[r][c] && board[r][c][0] !== turn) {
+          inner.className = 'capture-ring';
+        } else {
+          inner.className = 'move-dot';
+        }
+        sq.appendChild(inner);
+      }
+
+      if (board[r][c]) {
+        const piece = document.createElement('span');
+        piece.className = 'piece';
+        piece.textContent = PIECES[board[r][c]];
+        sq.appendChild(piece);
+      }
+
+      sq.onclick = () => handleClick(r, c);
+      cb.appendChild(sq);
+    }
+  }
+}
+
+function handleClick(r, c) {
+  if (gameOver || pendingPromotion) return;
+  if (gameMode === 'bot' && turn === 'b') return;
+
+  const piece = board[r][c];
+
+  if (selectedSq) {
+    const move = legalMoves.find(m => m.tr===r && m.tc===c);
+    if (move) {
+      executeMove(move);
+      return;
+    }
+  }
+
+  if (piece && piece[0] === turn) {
+    selectedSq = [r, c];
+    legalMoves = getLegalMovesForPiece(board, r, c, turn, enPassantTarget, castleRights);
+    renderBoard();
+  } else {
+    selectedSq = null;
+    legalMoves = [];
+    renderBoard();
+  }
+}
+
+function executeMove(move, animate = true) {
+  const nb = deepCopy(board);
+  const piece = nb[move.fr][move.fc];
+
+  if (move.enPassant) nb[move.fr][move.tc] = null;
+  if (move.castle === 'K') { nb[move.fr][7] = null; nb[move.fr][5] = (turn === 'w' ? 'wR' : 'bR'); }
+  if (move.castle === 'Q') { nb[move.fr][0] = null; nb[move.fr][3] = (turn === 'w' ? 'wR' : 'bR'); }
+
+  nb[move.tr][move.tc] = piece;
+  nb[move.fr][move.fc] = null;
+
+  if (piece === 'wP' && move.tr === 0) {
+    board = nb; lastMove = move;
+    pendingPromotion = { r:move.tr, c:move.tc, color:'w', board:nb, move };
+    showPromoModal('w');
+    return;
+  }
+  if (piece === 'bP' && move.tr === 7) {
+    board = nb; lastMove = move;
+    pendingPromotion = { r:move.tr, c:move.tc, color:'b', board:nb, move };
+    showPromoModal('b');
+    return;
+  }
+
+  if (piece === 'wK') { castleRights.wK = false; castleRights.wQ = false; }
+  if (piece === 'bK') { castleRights.bK = false; castleRights.bQ = false; }
+  if (piece === 'wR') { if (move.fc===7) castleRights.wK=false; if (move.fc===0) castleRights.wQ=false; }
+  if (piece === 'bR') { if (move.fc===7) castleRights.bK=false; if (move.fc===0) castleRights.bQ=false; }
+
+  enPassantTarget = (piece==='wP' && move.fr===6 && move.tr===4) ? [5,move.tc]
+                  : (piece==='bP' && move.fr===1 && move.tr===3) ? [2,move.tc] : null;
+
+  board = nb;
+  lastMove = move;
+
+  const opp = turn === 'w' ? 'b' : 'w';
+  recordMove(move, piece, nb);
+  turn = opp;
+  selectedSq = null; legalMoves = [];
+  renderBoard();
+  checkGameState();
+}
+
+function recordMove(move, piece, nb) {
+  const fileC = FILES[move.tc], rank = 8 - move.tr;
+  const capture = board[move.tr][move.tc] !== null && board[move.tr][move.tc] !== piece;
+  const notation = piece[1] + (capture?'x':'') + fileC + rank;
+  moveHistory.push(notation);
+
+  const ml = document.getElementById('moveList');
+  if (turn === 'w') {
+    const pair = document.createElement('div');
+    pair.className = 'move-pair';
+    pair.innerHTML = `<span class="move-num">${Math.ceil(moveHistory.length/2)}.</span><span>${notation}</span>`;
+    ml.appendChild(pair);
+  } else {
+    const last = ml.lastElementChild;
+    if (last) last.innerHTML += `<span style="margin-left:0.5rem">${notation}</span>`;
+  }
+  ml.scrollTop = ml.scrollHeight;
+}
+
+function checkGameState() {
+  const allMoves = getAllLegalMoves(board, turn, enPassantTarget, castleRights);
+  if (allMoves.length === 0) {
+    if (isInCheck(board, turn)) {
+      const winner = turn === 'w' ? 'Black' : 'White';
+      updateStatus(`CHECKMATE — ${winner} wins! 🏆`);
+    } else {
+      updateStatus('STALEMATE — Draw!');
+    }
+    gameOver = true;
+    return;
+  }
+  if (isInCheck(board, turn)) {
+    updateStatus((turn==='w'?'White':'Black') + ' is in CHECK!');
+  } else {
+    updateStatus((turn==='w'?'White':'Black') + ' to move');
+  }
+
+  if (gameMode === 'bot' && turn === 'b' && !gameOver) {
+    setTimeout(doBotMove, 350);
+    updateStatus('<span class="thinking-dot"></span><span class="thinking-dot"></span><span class="thinking-dot"></span>');
+  }
+}
+
+function updateStatus(html) {
+  document.getElementById('statusText').innerHTML = html;
+}
+
+function resignGame() {
+  if (gameOver) return;
+  gameOver = true;
+  const winner = turn === 'w' ? 'Black' : 'White';
+  updateStatus(`${turn==='w'?'White':'Black'} resigned. ${winner} wins!`);
+}
+
+// ═══════════════════════════════════════════════
+//  MOVE GENERATION
+// ═══════════════════════════════════════════════
+function getLegalMovesForPiece(b, r, c, color, ep, cr) {
+  const pseudo = getPseudoMoves(b, r, c, color, ep, cr);
+  return pseudo.filter(m => {
+    const nb = deepCopy(b);
+    applyPseudoMove(nb, m, color);
+    return !isInCheck(nb, color);
+  });
+}
+
+function getAllLegalMoves(b, color, ep, cr) {
+  const moves = [];
+  for (let r=0;r<8;r++) for (let c=0;c<8;c++) {
+    if (b[r][c] && b[r][c][0]===color) {
+      moves.push(...getLegalMovesForPiece(b,r,c,color,ep,cr));
+    }
+  }
+  return moves;
+}
+
+function applyPseudoMove(nb, m, color) {
+  if (m.enPassant) nb[m.fr][m.tc] = null;
+  if (m.castle==='K') { nb[m.fr][7]=null; nb[m.fr][5]=(color==='w'?'wR':'bR'); }
+  if (m.castle==='Q') { nb[m.fr][0]=null; nb[m.fr][3]=(color==='w'?'wR':'bR'); }
+  nb[m.tr][m.tc] = nb[m.fr][m.fc];
+  nb[m.fr][m.fc] = null;
+}
+
+function getPseudoMoves(b, r, c, color, ep, cr) {
+  const piece = b[r][c]; if (!piece) return [];
+  const type = piece[1]; const opp = color==='w'?'b':'w';
+  const moves = [];
+  const add = (tr, tc, extra={}) => moves.push({fr:r,fc:c,tr,tc,...extra});
+
+  const slide = (dirs) => {
+    for (const [dr,dc] of dirs) {
+      let nr=r+dr, nc=c+dc;
+      while (nr>=0&&nr<8&&nc>=0&&nc<8) {
+        if (b[nr][nc]) { if (b[nr][nc][0]===opp) add(nr,nc); break; }
+        else add(nr,nc);
+        nr+=dr; nc+=dc;
+      }
+    }
+  };
+
+  switch(type) {
+    case 'P': {
+      const dir = color==='w'?-1:1, startRow = color==='w'?6:1;
+      if (r+dir>=0&&r+dir<8&&!b[r+dir][c]) {
+        add(r+dir,c);
+        if (r===startRow && !b[r+2*dir][c]) add(r+2*dir,c);
+      }
+      for (const dc of [-1,1]) {
+        const nr=r+dir, nc=c+dc;
+        if (nr>=0&&nr<8&&nc>=0&&nc<8) {
+          if (b[nr][nc]&&b[nr][nc][0]===opp) add(nr,nc);
+          if (ep&&ep[0]===nr&&ep[1]===nc) add(nr,nc,{enPassant:true});
+        }
+      }
+      break;
+    }
+    case 'N': {
+      for (const [dr,dc] of [[-2,-1],[-2,1],[-1,-2],[-1,2],[1,-2],[1,2],[2,-1],[2,1]]) {
+        const nr=r+dr, nc=c+dc;
+        if (nr>=0&&nr<8&&nc>=0&&nc<8&&(!b[nr][nc]||b[nr][nc][0]===opp)) add(nr,nc);
+      }
+      break;
+    }
+    case 'B': slide([[-1,-1],[-1,1],[1,-1],[1,1]]); break;
+    case 'R': slide([[-1,0],[1,0],[0,-1],[0,1]]); break;
+    case 'Q': slide([[-1,-1],[-1,1],[1,-1],[1,1],[-1,0],[1,0],[0,-1],[0,1]]); break;
+    case 'K': {
+      for (const [dr,dc] of [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]) {
+        const nr=r+dr, nc=c+dc;
+        if (nr>=0&&nr<8&&nc>=0&&nc<8&&(!b[nr][nc]||b[nr][nc][0]===opp)) add(nr,nc);
+      }
+      const row = color==='w'?7:0;
+      if (r===row&&c===4) {
+        if (cr[color+'K']&&!b[row][5]&&!b[row][6]&&b[row][7]===color+'R') {
+          if (!isInCheck(b,color)) {
+            const nb1=deepCopy(b); nb1[row][5]=color+'K'; nb1[row][4]=null;
+            const nb2=deepCopy(b); nb2[row][6]=color+'K'; nb2[row][4]=null;
+            if (!isInCheck(nb1,color)&&!isInCheck(nb2,color)) add(row,6,{castle:'K'});
+          }
+        }
+        if (cr[color+'Q']&&!b[row][3]&&!b[row][2]&&!b[row][1]&&b[row][0]===color+'R') {
+          if (!isInCheck(b,color)) {
+            const nb1=deepCopy(b); nb1[row][3]=color+'K'; nb1[row][4]=null;
+            if (!isInCheck(nb1,color)) add(row,2,{castle:'Q'});
+          }
+        }
+      }
+      break;
+    }
+  }
+  return moves;
+}
+
+function isInCheck(b, color) {
+  let kr=-1,kc=-1;
+  for (let r=0;r<8;r++) for (let c=0;c<8;c++) if (b[r][c]===color+'K') { kr=r;kc=c; }
+  if (kr<0) return false;
+  const opp = color==='w'?'b':'w';
+  for (let r=0;r<8;r++) for (let c=0;c<8;c++) {
+    if (!b[r][c]||b[r][c][0]!==opp) continue;
+    const pseudo = getPseudoMoves(b,r,c,opp,null,{wK:false,wQ:false,bK:false,bQ:false});
+    if (pseudo.find(m=>m.tr===kr&&m.tc===kc)) return true;
+  }
+  return false;
+}
+
+function deepCopy(b) { return b.map(r=>[...r]); }
+
+// ═══════════════════════════════════════════════
+//  PAWN PROMOTION
+// ═══════════════════════════════════════════════
+function showPromoModal(color) {
+  const promos = color==='w'
+    ? [{p:'wQ',s:'♕'},{p:'wR',s:'♖'},{p:'wB',s:'♗'},{p:'wN',s:'♘'}]
+    : [{p:'bQ',s:'♛'},{p:'bR',s:'♜'},{p:'bB',s:'♝'},{p:'bN',s:'♞'}];
+  const div = document.getElementById('promoChoices');
+  div.innerHTML = '';
+  promos.forEach(({p,s}) => {
+    const btn = document.createElement('div');
+    btn.className = 'promo-piece'; btn.textContent = s;
+    btn.onclick = () => finishPromotion(p);
+    div.appendChild(btn);
+  });
+  document.getElementById('promoModal').classList.add('open');
+}
+
+function finishPromotion(piece) {
+  document.getElementById('promoModal').classList.remove('open');
+  if (!pendingPromotion) return;
+  const {r,c,color,move} = pendingPromotion;
+  board[r][c] = piece;
+  pendingPromotion = null;
+  const opp = color==='w'?'b':'w';
+  turn = opp;
+  selectedSq=null; legalMoves=[];
+  renderBoard();
+  checkGameState();
+}
+
+// ═══════════════════════════════════════════════
+//  BOT (MINIMAX + ALPHA-BETA)
+// ═══════════════════════════════════════════════
+const PST = {
+  P: [
+    [ 0, 0, 0, 0, 0, 0, 0, 0],
+    [50,50,50,50,50,50,50,50],
+    [10,10,20,30,30,20,10,10],
+    [ 5, 5,10,25,25,10, 5, 5],
+    [ 0, 0, 0,20,20, 0, 0, 0],
+    [ 5,-5,-10, 0, 0,-10,-5, 5],
+    [ 5,10,10,-20,-20,10,10, 5],
+    [ 0, 0, 0, 0, 0, 0, 0, 0]
+  ],
+  N: [
+    [-50,-40,-30,-30,-30,-30,-40,-50],
+    [-40,-20,  0,  0,  0,  0,-20,-40],
+    [-30,  0, 10, 15, 15, 10,  0,-30],
+    [-30,  5, 15, 20, 20, 15,  5,-30],
+    [-30,  0, 15, 20, 20, 15,  0,-30],
+    [-30,  5, 10, 15, 15, 10,  5,-30],
+    [-40,-20,  0,  5,  5,  0,-20,-40],
+    [-50,-40,-30,-30,-30,-30,-40,-50]
+  ],
+  B: [
+    [-20,-10,-10,-10,-10,-10,-10,-20],
+    [-10,  0,  0,  0,  0,  0,  0,-10],
+    [-10,  0,  5, 10, 10,  5,  0,-10],
+    [-10,  5,  5, 10, 10,  5,  5,-10],
+    [-10,  0, 10, 10, 10, 10,  0,-10],
+    [-10, 10, 10, 10, 10, 10, 10,-10],
+    [-10,  5,  0,  0,  0,  0,  5,-10],
+    [-20,-10,-10,-10,-10,-10,-10,-20]
+  ],
+  R: [
+    [ 0, 0, 0, 0, 0, 0, 0, 0],
+    [ 5,10,10,10,10,10,10, 5],
+    [-5, 0, 0, 0, 0, 0, 0,-5],
+    [-5, 0, 0, 0, 0, 0, 0,-5],
+    [-5, 0, 0, 0, 0, 0, 0,-5],
+    [-5, 0, 0, 0, 0, 0, 0,-5],
+    [-5, 0, 0, 0, 0, 0, 0,-5],
+    [ 0, 0, 0, 5, 5, 0, 0, 0]
+  ],
+  Q: [
+    [-20,-10,-10, -5, -5,-10,-10,-20],
+    [-10,  0,  0,  0,  0,  0,  0,-10],
+    [-10,  0,  5,  5,  5,  5,  0,-10],
+    [ -5,  0,  5,  5,  5,  5,  0, -5],
+    [  0,  0,  5,  5,  5,  5,  0, -5],
+    [-10,  5,  5,  5,  5,  5,  0,-10],
+    [-10,  0,  5,  0,  0,  0,  0,-10],
+    [-20,-10,-10, -5, -5,-10,-10,-20]
+  ],
+  K: [
+    [-30,-40,-40,-50,-50,-40,-40,-30],
+    [-30,-40,-40,-50,-50,-40,-40,-30],
+    [-30,-40,-40,-50,-50,-40,-40,-30],
+    [-30,-40,-40,-50,-50,-40,-40,-30],
+    [-20,-30,-30,-40,-40,-30,-30,-20],
+    [-10,-20,-20,-20,-20,-20,-20,-10],
+    [ 20, 20,  0,  0,  0,  0, 20, 20],
+    [ 20, 30, 10,  0,  0, 10, 30, 20]
+  ]
+};
+
+function evalBoard(b) {
+  let score = 0;
+  for (let r=0;r<8;r++) for (let c=0;c<8;c++) {
+    const p = b[r][c]; if (!p) continue;
+    const color = p[0], type = p[1];
+    const val = PIECE_VALUES[type]||0;
+    const pst = PST[type];
+    const pstVal = pst ? (color==='w' ? pst[r][c] : pst[7-r][c]) : 0;
+    score += (color==='w'?1:-1)*(val+pstVal);
+  }
+  return score;
+}
+
+function minimax(b, depth, alpha, beta, maximizing, ep, cr) {
+  const color = maximizing ? 'b' : 'w';
+  const allMoves = getAllLegalMoves(b, color, ep, cr);
+  if (depth===0 || allMoves.length===0) return evalBoard(b);
+
+  if (botDepth === 1 && Math.random() < 0.5) return evalBoard(b) + (Math.random()-0.5)*300;
+
+  if (maximizing) {
+    let best = -Infinity;
+    for (const m of allMoves) {
+      const nb = deepCopy(b);
+      applyPseudoMove(nb, m, color);
+      const nep = (b[m.fr][m.fc]==='bP'&&m.fr===1&&m.tr===3)?[2,m.tc]:null;
+      const ncr = {...cr};
+      if (b[m.fr][m.fc]==='bK'){ncr.bK=false;ncr.bQ=false;}
+      if (b[m.fr][m.fc]==='bR'){if(m.fc===7)ncr.bK=false;if(m.fc===0)ncr.bQ=false;}
+      const val = minimax(nb, depth-1, alpha, beta, false, nep, ncr);
+      best = Math.max(best, val);
+      alpha = Math.max(alpha, val);
+      if (beta<=alpha) break;
+    }
+    return best;
+  } else {
+    let best = Infinity;
+    for (const m of allMoves) {
+      const nb = deepCopy(b);
+      applyPseudoMove(nb, m, color);
+      const nep = (b[m.fr][m.fc]==='wP'&&m.fr===6&&m.tr===4)?[5,m.tc]:null;
+      const ncr = {...cr};
+      if (b[m.fr][m.fc]==='wK'){ncr.wK=false;ncr.wQ=false;}
+      if (b[m.fr][m.fc]==='wR'){if(m.fc===7)ncr.wK=false;if(m.fc===0)ncr.wQ=false;}
+      const val = minimax(nb, depth-1, alpha, beta, true, nep, ncr);
+      best = Math.min(best, val);
+      beta = Math.min(beta, val);
+      if (beta<=alpha) break;
+    }
+    return best;
+  }
+}
+
+function doBotMove() {
+  if (gameOver) return;
+  const allMoves = getAllLegalMoves(board, 'b', enPassantTarget, castleRights);
+  if (!allMoves.length) return;
+
+  let bestMove = null, bestVal = -Infinity;
+  const shuffle = [...allMoves].sort(()=>Math.random()-0.5);
+
+  for (const m of shuffle) {
+    const nb = deepCopy(board);
+    applyPseudoMove(nb, m, 'b');
+    const val = minimax(nb, botDepth-1, -Infinity, Infinity, false, null, {...castleRights});
+    const noise = botDepth === 1 ? (Math.random()-0.5)*400 : botDepth === 2 ? (Math.random()-0.5)*100 : 0;
+    if (val + noise > bestVal) { bestVal = val + noise; bestMove = m; }
+  }
+
+  if (bestMove) executeMove(bestMove);
+}
+
+// ═══════════════════════════════════════════════
+//  GAME SETUP
+// ═══════════════════════════════════════════════
+let currentMode = null;
+botDepth = 1;
+
+function selectMode(mode) {
+  currentMode = mode;
+  document.querySelectorAll('.mode-card').forEach(c=>c.classList.remove('selected'));
+  document.getElementById('mode'+mode.charAt(0).toUpperCase()+mode.slice(1)).classList.add('selected');
+
+  const diffWrap = document.getElementById('diffWrap');
+  diffWrap.classList.toggle('visible', mode==='bot');
+
+  document.getElementById('startBtn').style.display = 'inline-block';
+  document.getElementById('startWrap').style.display = 'block';
+}
+
+function setDiff(d, btn) {
+  botDepth = d;
+  document.querySelectorAll('.diff-btn').forEach(b=>b.classList.remove('active'));
+  btn.classList.add('active');
+}
+
+function startGame() {
+  gameMode = currentMode;
+  document.getElementById('gameWrap').classList.add('visible');
+  document.getElementById('startBtn').scrollIntoView({behavior:'smooth', block:'nearest'});
+  initGame();
+  buildBoardLabels();
+}
+
+function buildBoardLabels() {
+  const rl = document.getElementById('rankLabels');
+  rl.innerHTML = '';
+  for (let i=1;i<=8;i++) { const s=document.createElement('span'); s.textContent=i; rl.appendChild(s); }
+  const fl = document.getElementById('fileLabels');
+  fl.innerHTML = '';
+  FILES.forEach(f=>{ const s=document.createElement('span'); s.textContent=f; fl.appendChild(s); });
+}
+
+// ═══════════════════════════════════════════════
+//  LEARN LESSONS
+// ═══════════════════════════════════════════════
+const lessons = {
+  basics: {
+    title: 'The Basics of Chess',
+    body: `
+      <p>Chess is a two-player strategy game played on an 8×8 board with 64 squares alternating between light and dark. Each player begins with 16 pieces: one king, one queen, two rooks, two knights, two bishops, and eight pawns.</p>
+      <p>The goal is simple yet profound: <strong style="color:var(--gold)">checkmate your opponent's king</strong>. This means placing the king under attack (check) with no way to escape. White always moves first.</p>
+      <p>The board is set up so that each player has a light square in the bottom-right corner. Queens go on their own colour — the white queen on a light square, the black queen on a dark square.</p>
+      <p>A game can end in checkmate (one player wins), stalemate (draw — a player has no legal moves but isn't in check), or various other draw conditions including insufficient material, repetition, or the 50-move rule.</p>
+    `
+  },
+  pieces: {
+    title: 'The Pieces & Their Power',
+    body: `
+      <p>Every piece moves differently. Understanding how they move is the foundation of everything in chess.</p>
+      <div class="piece-showcase">
+        <div class="piece-info"><span class="symbol">♙</span><div class="pname">PAWN</div><div class="pvalue">1 point</div></div>
+        <div class="piece-info"><span class="symbol">♘</span><div class="pname">KNIGHT</div><div class="pvalue">3 points</div></div>
+        <div class="piece-info"><span class="symbol">♗</span><div class="pname">BISHOP</div><div class="pvalue">3 points</div></div>
+        <div class="piece-info"><span class="symbol">♖</span><div class="pname">ROOK</div><div class="pvalue">5 points</div></div>
+        <div class="piece-info"><span class="symbol">♕</span><div class="pname">QUEEN</div><div class="pvalue">9 points</div></div>
+        <div class="piece-info"><span class="symbol">♔</span><div class="pname">KING</div><div class="pvalue">∞</div></div>
+      </div>
+      <p><strong style="color:var(--gold)">Pawn</strong> — Moves one square forward (two from its starting position). Captures diagonally. Can be promoted to any piece upon reaching the last rank.</p>
+      <p><strong style="color:var(--gold)">Knight</strong> — Moves in an "L" shape: two squares in one direction, then one square perpendicular. The only piece that can jump over others.</p>
+      <p><strong style="color:var(--gold)">Bishop</strong> — Slides any number of squares diagonally. Each bishop stays on one colour for the entire game.</p>
+      <p><strong style="color:var(--gold)">Rook</strong> — Slides any number of squares horizontally or vertically. Powerful in open files and the endgame.</p>
+      <p><strong style="color:var(--gold)">Queen</strong> — The most powerful piece. Combines the rook and bishop — slides in any direction.</p>
+      <p><strong style="color:var(--gold)">King</strong> — Moves one square in any direction. Must be protected at all costs.</p>
+    `
+  },
+  opening: {
+    title: 'Opening Principles',
+    body: `
+      <p>The opening sets up your position for the middlegame. Following these four golden principles will keep you out of trouble in most games.</p>
+      <p><strong style="color:var(--gold)">1. Control the Center</strong> — The four central squares (e4, d4, e5, d5) are the most important on the board. Pieces in the center control more squares and have more options. Start by advancing a central pawn: 1.e4 or 1.d4.</p>
+      <p><strong style="color:var(--gold)">2. Develop Your Pieces</strong> — Get your knights and bishops off the back rank and into active positions. Don't move the same piece twice in the opening unless forced.</p>
+      <p><strong style="color:var(--gold)">3. Castle Early</strong> — Castling tucks your king away safely behind a wall of pawns and connects your rooks. Aim to castle within the first 10 moves.</p>
+      <p><strong style="color:var(--gold)">4. Don't Bring Your Queen Out Too Early</strong> — The queen is valuable and can be chased away by your opponent's developing moves, wasting time. Develop minor pieces first.</p>
+      <p>A simple, solid opening for beginners as White: 1.e4 e5 2.Nf3 Nc6 3.Bc4 — the Italian Game. It follows all four principles and leads to rich middlegame play.</p>
+    `
+  },
+  tactics: {
+    title: 'Basic Tactics',
+    body: `
+      <p>Tactics are short-term sequences that win material or deliver checkmate. They are the sharpest weapons in a chess player's arsenal.</p>
+      <p><strong style="color:var(--gold)">Fork</strong> — One piece attacks two (or more) enemy pieces simultaneously. Knights are the best forking pieces because their movement is so awkward to predict. A knight fork attacking the king and queen is called a "royal fork."</p>
+      <p><strong style="color:var(--gold)">Pin</strong> — A piece is "pinned" when moving it would expose a more valuable piece behind it to attack. If the exposed piece is the king, the pin is "absolute" — the pinned piece cannot legally move.</p>
+      <p><strong style="color:var(--gold)">Skewer</strong> — The reverse of a pin. A valuable piece is attacked and forced to move, exposing a less valuable piece behind it.</p>
+      <p><strong style="color:var(--gold)">Discovered Attack</strong> — Moving one piece reveals an attack by another piece behind it. If the revealed attack is check, it's called a "discovered check" — one of the most powerful weapons in chess.</p>
+      <p><strong style="color:var(--gold)">Double Check</strong> — Two pieces give check simultaneously. The king must move — it cannot be blocked or captured out of double check.</p>
+      <p>Train tactics daily! Even 10 minutes of puzzle solving will rapidly improve your game.</p>
+    `
+  },
+  checkmate: {
+    title: 'Checkmate Patterns',
+    body: `
+      <p>Recognizing mating patterns lets you spot winning combinations instantly. Here are the must-know patterns for beginners.</p>
+      <p><strong style="color:var(--gold)">Back Rank Mate</strong> — The king is trapped on the last rank by its own pawns, and a rook or queen delivers checkmate along that rank. Always watch for this and create "luft" (a pawn escape square) for your king.</p>
+      <p><strong style="color:var(--gold)">Scholar's Mate</strong> — A quick 4-move checkmate: 1.e4 e5 2.Bc4 Nc6 3.Qh5 Nf6?? 4.Qxf7#. Beginners fall for this constantly — and once you know it, you'll never fall for it again.</p>
+      <p><strong style="color:var(--gold)">Smothered Mate</strong> — A knight delivers checkmate to a king that is surrounded (smothered) by its own pieces with no escape squares.</p>
+      <p><strong style="color:var(--gold)">Two-Rook Roller</strong> — Two rooks cut off the king rank by rank (or file by file) until checkmate. The most mechanical mating pattern — great for beginners to practise.</p>
+      <p><strong style="color:var(--gold)">King and Queen Mate</strong> — The most common endgame. Use your queen to restrict the king to the edge, then bring your king to support and deliver mate.</p>
+    `
+  },
+  special: {
+    title: 'Special Moves',
+    body: `
+      <p>Three special moves surprise beginners and can completely change the course of a game.</p>
+      <p><strong style="color:var(--gold)">Castling</strong> — The king moves two squares towards a rook, and the rook jumps over to the other side. You can castle kingside (short) or queenside (long). Conditions: neither piece has moved, no pieces between them, the king is not in check, and the king does not pass through or land on an attacked square. Castling is the only move in chess where two pieces move at once.</p>
+      <p><strong style="color:var(--gold)">En Passant</strong> — French for "in passing." When a pawn advances two squares from its starting position and lands beside an enemy pawn, the enemy pawn can capture it as if it had only moved one square. This capture must be made immediately on the very next move or the right is lost forever. Many beginners (and even experienced players!) are unaware of this rule.</p>
+      <p><strong style="color:var(--gold)">Pawn Promotion</strong> — When a pawn reaches the opposite end of the board (the 8th rank for White, the 1st for Black), it must be promoted to a queen, rook, bishop, or knight. You are not limited to pieces already captured — you can have two or more queens! Almost always promote to a queen for maximum power.</p>
+    `
+  }
+};
+
+function openLesson(key) {
+  const lesson = lessons[key];
+  document.getElementById('modalTitle').textContent = lesson.title;
+  document.getElementById('modalBody').innerHTML = lesson.body;
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeLesson(e, force) {
+  if (force || e.target.id==='modalOverlay') {
+    document.getElementById('modalOverlay').classList.remove('open');
+  }
+}
+
+// ═══════════════════════════════════════════════
+//  INIT
+// ═══════════════════════════════════════════════
+initFloat();
+buildMiniBoard();
+
+document.getElementById('startWrap').style.display = 'none';
+</script>
+</body>
+</html>
+ 
+
+
+
